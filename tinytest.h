@@ -7,7 +7,8 @@
 
     Use:
     Define your tests as functions that don't take any arguments
-    but return "int". Then add them to a test suite. Finally,
+    but return "int". They should return 1 if successful otherwise, 0.
+    Then add them to a test suite. Finally,
     if all you want to run are the tests inside the same .c/.cpp translation
     unit add call to TINYTEST_MAIN_SINGLE_SUITE which takes as argument
     the name of the test suite to run.
@@ -30,7 +31,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef int (*TinyTestFunc)(void);
+typedef int (*TinyTestFunc)(const char *);
 
 typedef struct TinyTestStruct
 {
@@ -54,10 +55,34 @@ typedef struct TinyTestRegistryStruct
 
 #ifndef TINYTEST_NOTESTING
 
+#define TINYTEST_FALSE_MSG(actual, msg)                                 \
+  if ( (actual) )                                                       \
+  {                                                                     \
+    fprintf(stderr,"%s:%d false, actual: %s\n",                         \
+           __FILE__, __LINE__, #actual);                                \
+    if ( msg ) printf(msg);                                             \
+    return 0;                                                           \
+  }
+
+#define TINYTEST_FALSE(actual)                                          \
+  TINYTEST_FALSE_MSG(actual, NULL)
+
+#define TINYTEST_TRUE_MSG(actual, msg)                                  \
+  if ( !(actual) )                                                      \
+  {                                                                     \
+    fprintf(stderr,"%s:%d true, actual: %s\n",                          \
+           __FILE__, __LINE__, #actual);                                \
+    if ( msg ) printf(msg);                                             \
+    return 0;                                                           \
+  }
+
+#define TINYTEST_TRUE(actual)                                           \
+  TINYTEST_TRUE_MSG(actual, NULL)
+
 #define TINYTEST_EQUAL_MSG(expected, actual, msg)                       \
   if ( (expected) != (actual) )                                         \
   {                                                                     \
-    printf("%s:%d expected %s, actual: %s\n",                           \
+    fprintf(stderr,"%s:%d expected %s, actual: %s\n",                   \
            __FILE__, __LINE__, #expected, #actual);                     \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -69,7 +94,7 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_STR_EQUAL_MSG(expected, actual, msg)                   \
   if ( strcmp((expected), (actual)) )                                   \
   {                                                                     \
-    printf("%s:%d expected \"%s\", actual: \"%s\"\n",                   \
+    fprintf(stderr,"%s:%d expected \"%s\", actual: \"%s\"\n",           \
            __FILE__, __LINE__, expected, actual);                       \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -81,7 +106,7 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_ASSERT_MSG(assertion, msg)                             \
   if ( !(assertion) )                                                   \
   {                                                                     \
-    printf("%s:%d assertion failed: \"%s\"\n",                          \
+    fprintf(stderr,"%s:%d assertion failed: \"%s\"\n",                  \
            __FILE__, __LINE__, #assertion);                             \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -150,7 +175,7 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
       TinyTest* t = s->m_headTest;                                      \
       for ( ; t; t = t->m_next )                                        \
       {                                                                 \
-        if ( (*t->m_func)() )                                           \
+        if ( (*t->m_func)(t->m_name) )                                  \
         {                                                               \
           printf(".");                                                  \
           ++okTests;                                                    \
@@ -182,6 +207,10 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
   TINYTEST_END_MAIN();
 
 #else // TINYTEST_NOTESTING
+#define TINYTEST_FALSE_MSG(actual, msg) (void)0 
+#define TINYTEST_FALSE(actual) (void)0 
+#define TINYTEST_TRUE_MSG(actual, msg) (void)0 
+#define TINYTEST_TRUE(actual) (void)0 
 #define TINYTEST_EQUAL_MSG(expected, actual, msg) (void)0 
 #define TINYTEST_EQUAL(expected, actual) (void)0 
 #define TINYTEST_STR_EQUAL_MSG(expected, actual, msg) (void)0
