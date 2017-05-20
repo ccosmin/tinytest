@@ -1,6 +1,6 @@
 /*! 
     Simple unit testing for c/c++
-    Copyright Cosmin Cremarenco.
+    Copyright 2012, Cosmin Cremarenco.
     Licence: Apache 2.0
 
     Purpose: facilitate the unit testing for programs written in c/c++
