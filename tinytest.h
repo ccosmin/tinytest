@@ -171,6 +171,7 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
 
 #define TINYTEST_INTERNAL_RUN_TESTS()                                   \
   {                                                                     \
+    int iRc = 0;                                                        \
     int okTests = 0;                                                    \
     int failedTests = 0;                                                \
     TinyTestSuite* s = registry.m_headSuite;                            \
@@ -180,8 +181,15 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
       for ( ; t; t = t->m_next )                                        \
       {                                                                 \
         if ( t->m_setup )                                               \
+        {                                                               \
           (*t->m_setup)(t->m_name);                                     \
-        if ( (*t->m_func)(t->m_name) )                                  \
+        }                                                               \
+        iRc = (*t->m_func)(t->m_name);                                  \
+        if ( t->m_teardown )                                            \
+        {                                                               \
+          (*t->m_teardown)(t->m_name);                                  \
+        }                                                               \
+        if ( iRc )                                                      \
         {                                                               \
           printf(".");                                                  \
           ++okTests;                                                    \
@@ -191,8 +199,6 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
           printf("x");                                                  \
           ++failedTests;                                                \
         }                                                               \
-        if ( t->m_teardown )                                            \
-          (*t->m_teardown)(t->m_name);                                  \
       }                                                                 \
     }                                                                   \
     printf("\nOK: %d", okTests);                                        \

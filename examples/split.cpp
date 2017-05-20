@@ -1,5 +1,6 @@
 #include <string>
 #include <vector>
+#include <cstddef>
 
 #include "tinytest.h"
 
@@ -26,34 +27,37 @@ void Split(const std::string& src,
   }
 }
 
-int SplitTest1()
+int SplitTest1(const char *pName)
 {
   std::vector<std::string> v;
   Split("jjj 1111 222", " ", v);
-  TINYTEST_ASSERT(v.size() == 3);
-  TINYTEST_ASSERT(v[0] == "jjj");
-  TINYTEST_ASSERT(v[1] == "1111");
-  TINYTEST_ASSERT(v[2] == "222");
+  TINYTEST_ASSERT((v.size() == 3));
+  TINYTEST_ASSERT((v[0] == "jjj"));
+  TINYTEST_ASSERT((v[1] == "1111"));
+  TINYTEST_ASSERT((v[2] == "222"));
+  return 1;
 }
 
-int SplitTest2()
+int SplitTest2(const char *pName)
 {
   std::vector<std::string> v;
   Split("", " ", v);
-  TINYTEST_ASSERT(v.empty());
+  TINYTEST_ASSERT((v.empty()));
+  return 1;
 }
 
-int SplitTest3()
+int SplitTest3(const char *pName)
 {
   std::vector<std::string> v;
   Split("111", " ", v);
-  TINYTEST_ASSERT(v.size() == 1);
+  TINYTEST_ASSERT((v.size() == 1));
+  return 1;
 }
 
 TINYTEST_START_SUITE(SplitSuite);
-  TINYTEST_ADD_TEST(SplitTest1);
-  TINYTEST_ADD_TEST(SplitTest2);
-  TINYTEST_ADD_TEST(SplitTest3);
+  TINYTEST_ADD_TEST(SplitTest1,NULL,NULL);
+  TINYTEST_ADD_TEST(SplitTest2,NULL,NULL);
+  TINYTEST_ADD_TEST(SplitTest3,NULL,NULL);
 TINYTEST_END_SUITE();
 
 TINYTEST_MAIN_SINGLE_SUITE(SplitSuite);
