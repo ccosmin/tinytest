@@ -37,6 +37,8 @@ typedef struct TinyTestStruct
 {
   TinyTestFunc m_func;
   const char* m_name;
+  TinyTestFunc m_setup;
+  TinyTestFunc m_teardown;
   struct TinyTestStruct* m_next;
 } TinyTest;
 
@@ -126,10 +128,12 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
   suite->m_headTest = NULL;                                             \
   suite->m_next = NULL
   
-#define TINYTEST_ADD_TEST(test)                                         \
+#define TINYTEST_ADD_TEST(test,setup,teardown)                          \
   TinyTest* test##decl = (TinyTest*)malloc(sizeof(TinyTest));           \
   test##decl->m_func = test;                                            \
   test##decl->m_name = #test;                                           \
+  test##decl->m_setup = setup;                                          \
+  test##decl->m_teardown = teardown;                                    \
   test##decl->m_next = suite->m_headTest;                               \
   suite->m_headTest = test##decl         
 
@@ -175,6 +179,8 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
       TinyTest* t = s->m_headTest;                                      \
       for ( ; t; t = t->m_next )                                        \
       {                                                                 \
+        if ( t->m_setup )                                               \
+          (*t->m_setup)(t->m_name);                                     \
         if ( (*t->m_func)(t->m_name) )                                  \
         {                                                               \
           printf(".");                                                  \
@@ -185,6 +191,8 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
           printf("x");                                                  \
           ++failedTests;                                                \
         }                                                               \
+        if ( t->m_teardown )                                            \
+          (*t->m_teardown)(t->m_name);                                  \
       }                                                                 \
     }                                                                   \
     printf("\nOK: %d", okTests);                                        \
