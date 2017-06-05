@@ -60,7 +60,13 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_FALSE_MSG(actual, msg)                                 \
   if ( (actual) )                                                       \
   {                                                                     \
-    fprintf(stderr,"%s:%d false, actual: %s\n",                         \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d false, actual: %s\n",                                \
            __FILE__, __LINE__, #actual);                                \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -69,11 +75,21 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_FALSE(actual)                                          \
   TINYTEST_FALSE_MSG(actual, NULL)
 
+#define XCTAssertFalse(actual)                                          \
+  TINYTEST_FALSE_MSG(actual, NULL)
+
 #define TINYTEST_TRUE_MSG(actual, msg)                                  \
   if ( !(actual) )                                                      \
   {                                                                     \
-    fprintf(stderr,"%s:%d true, actual: %s\n",                          \
-           __FILE__, __LINE__, #actual);                                \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d true, actual: %s\n",                                 \
+           __FILE__, __LINE__, #actual                                  \
+    );                                                                  \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
   }
@@ -81,10 +97,19 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_TRUE(actual)                                           \
   TINYTEST_TRUE_MSG(actual, NULL)
 
+#define XCTAssertTrue(actual)                                           \
+  TINYTEST_TRUE_MSG(actual, NULL)
+
 #define TINYTEST_EQUAL_MSG(expected, actual, msg)                       \
   if ( (expected) != (actual) )                                         \
   {                                                                     \
-    fprintf(stderr,"%s:%d expected %s, actual: %s\n",                   \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d expected %s, actual: %s\n",                          \
            __FILE__, __LINE__, #expected, #actual);                     \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -96,7 +121,13 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_STR_EQUAL_MSG(expected, actual, msg)                   \
   if ( strcmp((expected), (actual)) )                                   \
   {                                                                     \
-    fprintf(stderr,"%s:%d expected \"%s\", actual: \"%s\"\n",           \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d expected \"%s\", actual: \"%s\"\n",                  \
            __FILE__, __LINE__, expected, actual);                       \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -108,7 +139,13 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_ASSERT_MSG(assertion, msg)                             \
   if ( !(assertion) )                                                   \
   {                                                                     \
-    fprintf(stderr,"%s:%d assertion failed: \"%s\"\n",                  \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d assertion failed: \"%s\"\n",                         \
            __FILE__, __LINE__, #assertion);                             \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -204,7 +241,13 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
     printf("\nOK: %d", okTests);                                        \
     if ( failedTests )                                                  \
     {                                                                   \
-      printf(" FAILED: %d", failedTests);                               \
+      printf(                                                           \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+              " FAILED: %d"                                             \
+              "\x1b[0m",                                                \
+              failedTests                                               \
+      );                                                                \
     }                                                                   \
     printf("\n");                                                       \
   }
