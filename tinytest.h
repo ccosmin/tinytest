@@ -1,13 +1,14 @@
 /*! 
     Simple unit testing for c/c++
-    Copyright Cosmin Cremarenco.
+    Copyright 2012, Cosmin Cremarenco.
     Licence: Apache 2.0
 
     Purpose: facilitate the unit testing for programs written in c/c++
 
     Use:
     Define your tests as functions that don't take any arguments
-    but return "int". Then add them to a test suite. Finally,
+    but return "int". They should return 1 if successful otherwise, 0.
+    Then add them to a test suite. Finally,
     if all you want to run are the tests inside the same .c/.cpp translation
     unit add call to TINYTEST_MAIN_SINGLE_SUITE which takes as argument
     the name of the test suite to run.
@@ -30,12 +31,14 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-typedef int (*TinyTestFunc)(void);
+typedef int (*TinyTestFunc)(const char *);
 
 typedef struct TinyTestStruct
 {
   TinyTestFunc m_func;
   const char* m_name;
+  TinyTestFunc m_setup;
+  TinyTestFunc m_teardown;
   struct TinyTestStruct* m_next;
 } TinyTest;
 
@@ -54,10 +57,59 @@ typedef struct TinyTestRegistryStruct
 
 #ifndef TINYTEST_NOTESTING
 
+#define TINYTEST_FALSE_MSG(actual, msg)                                 \
+  if ( (actual) )                                                       \
+  {                                                                     \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d false, actual: %s\n",                                \
+           __FILE__, __LINE__, #actual);                                \
+    if ( msg ) printf(msg);                                             \
+    return 0;                                                           \
+  }
+
+#define TINYTEST_FALSE(actual)                                          \
+  TINYTEST_FALSE_MSG(actual, NULL)
+
+#define XCTAssertFalse(actual)                                          \
+  TINYTEST_FALSE_MSG(actual, NULL)
+
+#define TINYTEST_TRUE_MSG(actual, msg)                                  \
+  if ( !(actual) )                                                      \
+  {                                                                     \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d true, actual: %s\n",                                 \
+           __FILE__, __LINE__, #actual                                  \
+    );                                                                  \
+    if ( msg ) printf(msg);                                             \
+    return 0;                                                           \
+  }
+
+#define TINYTEST_TRUE(actual)                                           \
+  TINYTEST_TRUE_MSG(actual, NULL)
+
+#define XCTAssertTrue(actual)                                           \
+  TINYTEST_TRUE_MSG(actual, NULL)
+
 #define TINYTEST_EQUAL_MSG(expected, actual, msg)                       \
   if ( (expected) != (actual) )                                         \
   {                                                                     \
-    printf("%s:%d expected %s, actual: %s\n",                           \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d expected %s, actual: %s\n",                          \
            __FILE__, __LINE__, #expected, #actual);                     \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -69,7 +121,13 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_STR_EQUAL_MSG(expected, actual, msg)                   \
   if ( strcmp((expected), (actual)) )                                   \
   {                                                                     \
-    printf("%s:%d expected \"%s\", actual: \"%s\"\n",                   \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d expected \"%s\", actual: \"%s\"\n",                  \
            __FILE__, __LINE__, expected, actual);                       \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -81,7 +139,13 @@ typedef struct TinyTestRegistryStruct
 #define TINYTEST_ASSERT_MSG(assertion, msg)                             \
   if ( !(assertion) )                                                   \
   {                                                                     \
-    printf("%s:%d assertion failed: \"%s\"\n",                          \
+    fprintf(                                                            \
+            stderr,                                                     \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+            "ERROR: "                                                   \
+              "\x1b[0m"                                                 \
+            "%s:%d assertion failed: \"%s\"\n",                         \
            __FILE__, __LINE__, #assertion);                             \
     if ( msg ) printf(msg);                                             \
     return 0;                                                           \
@@ -101,10 +165,12 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
   suite->m_headTest = NULL;                                             \
   suite->m_next = NULL
   
-#define TINYTEST_ADD_TEST(test)                                         \
+#define TINYTEST_ADD_TEST(test,setup,teardown)                          \
   TinyTest* test##decl = (TinyTest*)malloc(sizeof(TinyTest));           \
   test##decl->m_func = test;                                            \
   test##decl->m_name = #test;                                           \
+  test##decl->m_setup = setup;                                          \
+  test##decl->m_teardown = teardown;                                    \
   test##decl->m_next = suite->m_headTest;                               \
   suite->m_headTest = test##decl         
 
@@ -142,6 +208,7 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
 
 #define TINYTEST_INTERNAL_RUN_TESTS()                                   \
   {                                                                     \
+    int iRc = 0;                                                        \
     int okTests = 0;                                                    \
     int failedTests = 0;                                                \
     TinyTestSuite* s = registry.m_headSuite;                            \
@@ -150,7 +217,16 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
       TinyTest* t = s->m_headTest;                                      \
       for ( ; t; t = t->m_next )                                        \
       {                                                                 \
-        if ( (*t->m_func)() )                                           \
+        if ( t->m_setup )                                               \
+        {                                                               \
+          (*t->m_setup)(t->m_name);                                     \
+        }                                                               \
+        iRc = (*t->m_func)(t->m_name);                                  \
+        if ( t->m_teardown )                                            \
+        {                                                               \
+          (*t->m_teardown)(t->m_name);                                  \
+        }                                                               \
+        if ( iRc )                                                      \
         {                                                               \
           printf(".");                                                  \
           ++okTests;                                                    \
@@ -165,7 +241,13 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
     printf("\nOK: %d", okTests);                                        \
     if ( failedTests )                                                  \
     {                                                                   \
-      printf(" FAILED: %d", failedTests);                               \
+      printf(                                                           \
+              "\x1b[1m"                                                 \
+              "\x1b[31m"                                                \
+              " FAILED: %d"                                             \
+              "\x1b[0m",                                                \
+              failedTests                                               \
+      );                                                                \
     }                                                                   \
     printf("\n");                                                       \
   }
@@ -182,6 +264,10 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
   TINYTEST_END_MAIN();
 
 #else // TINYTEST_NOTESTING
+#define TINYTEST_FALSE_MSG(actual, msg) (void)0 
+#define TINYTEST_FALSE(actual) (void)0 
+#define TINYTEST_TRUE_MSG(actual, msg) (void)0 
+#define TINYTEST_TRUE(actual) (void)0 
 #define TINYTEST_EQUAL_MSG(expected, actual, msg) (void)0 
 #define TINYTEST_EQUAL(expected, actual) (void)0 
 #define TINYTEST_STR_EQUAL_MSG(expected, actual, msg) (void)0

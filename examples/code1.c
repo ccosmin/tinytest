@@ -9,13 +9,14 @@ unsigned long Factorial(unsigned long x)
     return 1;
 }
 
-int TestFactorial()
+int TestFactorial(const char *pName)
 {
   TINYTEST_EQUAL(1, Factorial(0));
   TINYTEST_EQUAL(6, Factorial(3));
+  return 1;
 }
 
 TINYTEST_START_SUITE(Code1);
-  TINYTEST_ADD_TEST(TestFactorial);
+  TINYTEST_ADD_TEST(TestFactorial,NULL,NULL);
 TINYTEST_END_SUITE();
 
