@@ -31,6 +31,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+int     exitCode = 0;
+
+
 typedef int (*TinyTestFunc)(const char *);
 
 typedef struct TinyTestStruct
@@ -248,6 +251,7 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
               "\x1b[0m",                                                \
               failedTests                                               \
       );                                                                \
+      exitCode = 4;                                                     \
     }                                                                   \
     printf("\n");                                                       \
   }
@@ -256,6 +260,7 @@ void Suite##suiteName(TinyTestRegistry* registry)                       \
     TINYTEST_INTERNAL_RUN_TESTS();                                      \
     printf("\n");                                                       \
     TINYTEST_INTERNAL_FREE_TESTS()                                      \
+    return exitCode;                                                    \
   }
 
 #define TINYTEST_MAIN_SINGLE_SUITE(suiteName)                           \
